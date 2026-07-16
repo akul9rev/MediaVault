@@ -22,63 +22,7 @@ The application utilizes an atomic database ledger system to handle coins transa
 
 ## 📊 Database Schema & ER Diagram
 
-The database structure relies on relations enforcing referential integrity. Indices are configured for fast lookups.
-
-### Database ER Diagram
-```mermaid
-erDiagram
-    users {
-        BIGINT_UNSIGNED id PK "Auto Increment"
-        VARCHAR_255 name
-        VARCHAR_255 email "Unique"
-        VARCHAR_255 password_hash
-        INT wallet_balance "Default 100"
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
-    images {
-        BIGINT_UNSIGNED id PK "Auto Increment"
-        BIGINT_UNSIGNED owner_id FK "References users.id"
-        VARCHAR_255 title
-        TEXT description
-        VARCHAR_255 original_filename
-        VARCHAR_255 mime_type
-        BIGINT_UNSIGNED file_size
-        VARCHAR_500 original_path
-        VARCHAR_500 preview_path
-        INT_UNSIGNED unlock_price "Default 0"
-        TINYINT_1 is_deleted "Default 0"
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
-    purchases {
-        BIGINT_UNSIGNED id PK "Auto Increment"
-        BIGINT_UNSIGNED user_id FK "References users.id"
-        BIGINT_UNSIGNED image_id FK "References images.id"
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
-    transactions {
-        BIGINT_UNSIGNED id PK "Auto Increment"
-        BIGINT_UNSIGNED user_id FK "References users.id"
-        INT amount
-        ENUM type "'SIGNUP', 'PURCHASE', 'EARNING'"
-        VARCHAR_255 description
-        TIMESTAMP created_at
-    }
-
-    users ||--o{ images : "uploads"
-    users ||--o{ purchases : "unlocks"
-    images ||--o{ purchases : "is unlocked by"
-    users ||--o{ transactions : "performs"
-```
-
-### Table Purpose Explanations
-
-1.  **`users`**: Stores user identities, auth credentials, and the user's active wallet coin balance.
-2.  **`images`**: Stores premium uploaded image metadata, pricing, ownership, soft-deletion status, and the physical disk paths to both the raw original file and the blurred preview file.
-3.  **`purchases`**: Join table mapping buyers to their unlocked images. Enforces a `UNIQUE(user_id, image_id)` constraint so an image can only be bought once by a user.
-4.  **`transactions`**: Audit ledger tracking every coin fluctuation. Records the user, coin amount (positive for credits, negative for debits), transaction type (`SIGNUP`, `PURCHASE`, `EARNING`), and a human-readable description.
+The database structure and ER diagram are documented in the separate [DATABASE_SCHEMA.md](file:///D:/akul/PROJECTS/Media_lock/DATABASE_SCHEMA.md) file.
 
 ---
 
