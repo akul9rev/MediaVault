@@ -1,119 +1,209 @@
-# Media Lock Database Schema & ER Diagram
+# MediaVault Database Schema
 
-This document contains the detailed database structure, Entity-Relationship (ER) diagram, table attributes, data types, indexes, and referential integrity constraints of the Media Lock project.
+## Overview
+
+The MediaVault database is designed using a normalized relational database model. It securely manages user authentication, premium media uploads, wallet transactions, image purchases, and protected media access.
+
+The database consists of four core entities:
+
+- Users
+- Images
+- Purchases
+- Transactions
 
 ---
 
-## 📊 Entity-Relationship (ER) Diagram
+# Entity Relationship Diagram
 
-The project uses a MySQL database. Below is the ER diagram representing the entities, their properties, keys, and relationships.
+```
+                           +----------------------+
+                           |        USERS         |
+                           +----------------------+
+                           | PK  id              |
+                           | name               |
+                           | email (Unique)     |
+                           | password_hash      |
+                           | wallet_balance     |
+                           | created_at         |
+                           | updated_at         |
+                           +----------------------+
+                                   |
+                          uploads (1:N)
+                                   |
+                                   ▼
+                           +----------------------+
+                           |       IMAGES         |
+                           +----------------------+
+                           | PK  id              |
+                           | FK  owner_id        |
+                           | title              |
+                           | description        |
+                           | original_filename  |
+                           | mime_type          |
+                           | file_size          |
+                           | original_path      |
+                           | preview_path       |
+                           | unlock_price       |
+                           | is_deleted         |
+                           | created_at         |
+                           | updated_at         |
+                           +----------------------+
+                                   ▲
+                                   |
+                        purchased (N:N)
+                                   |
+                                   ▼
+                           +----------------------+
+                           |     PURCHASES        |
+                           +----------------------+
+                           | PK id               |
+                           | FK user_id          |
+                           | FK image_id         |
+                           | created_at          |
+                           | updated_at          |
+                           +----------------------+
+                             ▲
+                             |
+                   user has many purchases
+                             |
+                             |
++----------------------+      |
+|    TRANSACTIONS      |      |
++----------------------+      |
+| PK id               |      |
+| FK user_id          |------+
+| amount              |
+| type                |
+| description         |
+| created_at          |
++----------------------+
 
-```mermaid
-erDiagram
-    users {
-        BIGINT_UNSIGNED id PK "Auto Increment"
-        VARCHAR_255 name
-        VARCHAR_255 email "Unique"
-        VARCHAR_255 password_hash
-        INT wallet_balance "Default 100"
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
-    images {
-        BIGINT_UNSIGNED id PK "Auto Increment"
-        BIGINT_UNSIGNED owner_id FK "References users.id"
-        VARCHAR_255 title
-        TEXT description
-        VARCHAR_255 original_filename
-        VARCHAR_255 mime_type
-        BIGINT_UNSIGNED file_size
-        VARCHAR_500 original_path
-        VARCHAR_500 preview_path
-        INT_UNSIGNED unlock_price "Default 0"
-        TINYINT_1 is_deleted "Default 0"
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
-    purchases {
-        BIGINT_UNSIGNED id PK "Auto Increment"
-        BIGINT_UNSIGNED user_id FK "References users.id"
-        BIGINT_UNSIGNED image_id FK "References images.id"
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
-    transactions {
-        BIGINT_UNSIGNED id PK "Auto Increment"
-        BIGINT_UNSIGNED user_id FK "References users.id"
-        INT amount
-        ENUM type "'SIGNUP', 'PURCHASE', 'EARNING'"
-        VARCHAR_255 description
-        TIMESTAMP created_at
-    }
-
-    users ||--o{ images : "uploads"
-    users ||--o{ purchases : "unlocks"
-    images ||--o{ purchases : "is unlocked by"
-    users ||--o{ transactions : "performs"
 ```
 
 ---
 
-## 🗄️ Tables and Purpose
+# Relationship Summary
 
-### 1. `users` Table
-Stores registered user accounts, passwords, and their current coin balance.
-*   **Columns**:
-    *   `id` (BIGINT UNSIGNED): Primary Key. Auto-incremented unique user identifier.
-    *   `name` (VARCHAR 255): The user's display name.
-    *   `email` (VARCHAR 255): Unique email address used for login authentication.
-    *   `password_hash` (VARCHAR 255): Secure bcrypt hash of the user's password.
-    *   `wallet_balance` (INT): Active wallet coin balance (defaults to `100` on signup).
-    *   `created_at` (TIMESTAMP): Time of registration.
-    *   `updated_at` (TIMESTAMP): Automatically updated timestamp of last profile modification.
-
-### 2. `images` Table
-Stores premium uploaded media listings. Original files are protected, while preview versions are blurred.
-*   **Columns**:
-    *   `id` (BIGINT UNSIGNED): Primary Key. Auto-incremented unique image identifier.
-    *   `owner_id` (BIGINT UNSIGNED): Foreign Key referencing `users(id)`. Identifies the uploader/seller.
-    *   `title` (VARCHAR 255): Title of the image listing.
-    *   `description` (TEXT): Detailed description of the premium image.
-    *   `original_filename` (VARCHAR 255): The original filename uploaded by the user.
-    *   `mime_type` (VARCHAR 100): MIME type of the file (e.g. `image/jpeg`, `image/png`).
-    *   `file_size` (BIGINT UNSIGNED): File size in bytes.
-    *   `original_path` (VARCHAR 500): Physical server disk path to the full-resolution secure raw file.
-    *   `preview_path` (VARCHAR 500): Physical server disk path to the resized blurred thumbnail file.
-    *   `unlock_price` (INT UNSIGNED): Coin cost required for other users to unlock this image (defaults to `0`).
-    *   `is_deleted` (TINYINT 1): Soft deletion flag (defaults to `0`). Set to `1` when owner deletes listing.
-    *   `created_at` (TIMESTAMP): Time of upload.
-    *   `updated_at` (TIMESTAMP): Time of last modification.
-
-### 3. `purchases` Table
-A join table mapping users to the images they have unlocked. Enables access checks for the original stream.
-*   **Constraints**:
-    *   `uq_user_image` UNIQUE constraint on `(user_id, image_id)` to prevent buying the same image multiple times.
-*   **Columns**:
-    *   `id` (BIGINT UNSIGNED): Primary Key.
-    *   `user_id` (BIGINT UNSIGNED): Foreign Key referencing `users(id)`. The buyer.
-    *   `image_id` (BIGINT UNSIGNED): Foreign Key referencing `images(id)`. The unlocked image.
-    *   `created_at` (TIMESTAMP): Time of purchase.
-    *   `updated_at` (TIMESTAMP): Time of last update.
-
-### 4. `transactions` Table
-An audit ledger log recording all coin balance modifications (signups, purchases, and earnings).
-*   **Columns**:
-    *   `id` (BIGINT UNSIGNED): Primary Key.
-    *   `user_id` (BIGINT UNSIGNED): Foreign Key referencing `users(id)`. Target wallet.
-    *   `amount` (INT): Coin change (positive for earnings/credits, negative for purchases/debits).
-    *   `type` (ENUM): Transaction type descriptor (`SIGNUP`, `PURCHASE`, `EARNING`).
-    *   `description` (VARCHAR 255): Human-readable audit log description.
-    *   `created_at` (TIMESTAMP): Time of transaction log entry.
+| Parent Table | Child Table | Relationship |
+|--------------|------------|--------------|
+| Users | Images | One user can upload many images |
+| Users | Purchases | One user can purchase many images |
+| Images | Purchases | One image can be purchased by many users |
+| Users | Transactions | One user can have many wallet transactions |
 
 ---
 
-## ⚡ Database Performance Indexes
-To optimize performance during high load and ensure rapid query response times:
-1.  `idx_users_email`: Built on `users(email)` for fast credential matching during logins.
-2.  `idx_images_owner_id`: Built on `images(owner_id)` for quick lookup of owner's images on profile pages.
-3.  `idx_purchases_lookup`: Compound index built on `purchases(user_id, image_id)` for lightning-fast unlocking state validation.
-4.  `idx_transactions_user_id`: Built on `transactions(user_id)` for retrieving user ledger history logs.
+# Table Details
+
+## 1. Users
+
+Stores all registered users and wallet information.
+
+| Column | Type | Description |
+|---------|------|-------------|
+| id | BIGINT UNSIGNED | Primary Key |
+| name | VARCHAR(255) | User name |
+| email | VARCHAR(255) | Unique email |
+| password_hash | VARCHAR(255) | bcrypt password hash |
+| wallet_balance | INT | Current wallet balance |
+| created_at | TIMESTAMP | Registration time |
+| updated_at | TIMESTAMP | Last updated |
+
+---
+
+## 2. Images
+
+Stores uploaded premium images.
+
+| Column | Type | Description |
+|---------|------|-------------|
+| id | BIGINT UNSIGNED | Primary Key |
+| owner_id | BIGINT UNSIGNED | References Users.id |
+| title | VARCHAR(255) | Image title |
+| description | TEXT | Image description |
+| original_filename | VARCHAR(255) | Uploaded filename |
+| mime_type | VARCHAR(100) | MIME type |
+| file_size | BIGINT | File size |
+| original_path | VARCHAR(500) | Original image location |
+| preview_path | VARCHAR(500) | Blurred preview location |
+| unlock_price | INT | Unlock price |
+| is_deleted | BOOLEAN | Soft delete flag |
+| created_at | TIMESTAMP | Upload timestamp |
+| updated_at | TIMESTAMP | Last updated |
+
+---
+
+## 3. Purchases
+
+Stores all purchased media.
+
+| Column | Type | Description |
+|---------|------|-------------|
+| id | BIGINT UNSIGNED | Primary Key |
+| user_id | BIGINT UNSIGNED | Buyer |
+| image_id | BIGINT UNSIGNED | Purchased image |
+| created_at | TIMESTAMP | Purchase time |
+| updated_at | TIMESTAMP | Updated timestamp |
+
+### Constraints
+
+- UNIQUE(user_id, image_id)
+- Prevents duplicate purchases.
+
+---
+
+## 4. Transactions
+
+Stores every wallet transaction.
+
+| Column | Type | Description |
+|---------|------|-------------|
+| id | BIGINT UNSIGNED | Primary Key |
+| user_id | BIGINT UNSIGNED | References Users.id |
+| amount | INT | Credit/Debit amount |
+| type | ENUM | SIGNUP, PURCHASE, EARNING |
+| description | VARCHAR(255) | Transaction description |
+| created_at | TIMESTAMP | Transaction time |
+
+---
+
+# Database Indexes
+
+| Index | Purpose |
+|--------|---------|
+| idx_users_email | Fast login lookup |
+| idx_images_owner_id | Fast owner image lookup |
+| idx_purchases_lookup | Fast unlock validation |
+| idx_transactions_user_id | Fast transaction history |
+
+---
+
+# Security Considerations
+
+The database has been designed with security in mind.
+
+- Passwords are stored using **bcrypt hashing**.
+- Email addresses are enforced as **unique**.
+- Duplicate purchases are prevented using a **UNIQUE(user_id, image_id)** constraint.
+- Original media files are **not stored in publicly accessible directories**.
+- Only blurred preview images are publicly accessible.
+- Original media is served only after **JWT authentication** and **purchase/ownership verification**.
+- Wallet deductions and purchase creation are performed together to maintain data consistency.
+
+---
+
+# Normalization
+
+The schema follows a normalized relational design.
+
+- User information is stored only once.
+- Media metadata is separated from purchase history.
+- Purchase history is maintained independently.
+- Transaction records form an immutable audit trail.
+- Relationships are maintained using foreign keys.
+
+---
+
+# Summary
+
+The MediaVault database consists of four relational entities working together to provide secure authentication, premium media management, wallet operations, purchase tracking, and controlled access to original media. The schema is optimized through indexing, referential integrity, and normalized table design to ensure scalability, consistency, and security.
