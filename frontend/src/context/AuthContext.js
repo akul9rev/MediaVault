@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authService from '../services/authService';
+import walletService from '../services/walletService';
 import { registerUnauthorizedHandler } from '../services/api';
 
 export const AuthContext = createContext();
@@ -18,7 +19,23 @@ export const AuthProvider = ({ children }) => {
 
       if (storedToken && storedUser) {
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+
+        // Fetch fresh wallet balance in sync
+        try {
+          const balanceData = await walletService.getBalance();
+          if (balanceData && balanceData.wallet_balance !== undefined) {
+            const updatedUser = {
+              ...parsedUser,
+              wallet_balance: balanceData.wallet_balance
+            };
+            await AsyncStorage.setItem('media_lock_user', JSON.stringify(updatedUser));
+            setUser(updatedUser);
+          }
+        } catch (walletErr) {
+          console.warn('Failed to sync wallet balance from server:', walletErr);
+        }
       }
     } catch (err) {
       console.warn('Error restoring session from AsyncStorage:', err);

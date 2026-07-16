@@ -52,6 +52,15 @@ export const mediaService = {
       onUploadProgress
     });
     return response.data;
+  },
+
+  /**
+   * Fetch list of media purchased/unlocked by the user
+   * @returns {Promise<Object>}
+   */
+  getPurchasedMedia: async () => {
+    const response = await api.get('/media/purchased');
+    return response.data;
   }
 };
 

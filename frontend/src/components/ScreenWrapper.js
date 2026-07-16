@@ -1,12 +1,12 @@
 import React from 'react';
 import { 
   StyleSheet, 
-  SafeAreaView, 
   KeyboardAvoidingView, 
   Platform, 
   ScrollView, 
   View 
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import colors from '../constants/colors';
 

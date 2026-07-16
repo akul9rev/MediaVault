@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import colors from '../src/constants/colors';
 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 /**
  * Navigation Gate Component
  * Handles redirection logic based on loading state, segments, and JWT token presence.
@@ -41,9 +43,11 @@ function NavigationGate() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <NavigationGate />
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <NavigationGate />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 
