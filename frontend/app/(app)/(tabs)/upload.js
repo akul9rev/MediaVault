@@ -131,6 +131,7 @@ export default function UploadScreen() {
         setUploadProgress(percentCompleted);
       });
 
+      setIsUploading(false);
       Alert.alert(
         'Success', 
         'Your premium image has been uploaded successfully!',
