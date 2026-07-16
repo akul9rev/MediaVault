@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -17,12 +17,44 @@ import { Ionicons } from '@expo/vector-icons';
 import colors from '../constants/colors';
 import spacing from '../constants/spacing';
 import typography from '../constants/typography';
+import api from '../services/api';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 /**
+ * High performance manual base64 encoder
+ */
+const arrayBufferToBase64 = (buffer) => {
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  let base64 = '';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let i = 0;
+  for (; i < len - 2; i += 3) {
+    const chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+    base64 += chars[(chunk >> 18) & 63];
+    base64 += chars[(chunk >> 12) & 63];
+    base64 += chars[(chunk >> 6) & 63];
+    base64 += chars[chunk & 63];
+  }
+  if (i === len - 2) {
+    const chunk = (bytes[i] << 16) | (bytes[i + 1] << 8);
+    base64 += chars[(chunk >> 18) & 63];
+    base64 += chars[(chunk >> 12) & 63];
+    base64 += chars[(chunk >> 6) & 63];
+    base64 += '=';
+  } else if (i === len - 1) {
+    const chunk = bytes[i] << 16;
+    base64 += chars[(chunk >> 18) & 63];
+    base64 += chars[(chunk >> 12) & 63];
+    base64 += '==';
+  }
+  return base64;
+};
+
+/**
  * Reusable Premium Original Image Zoom Viewer Modal
- * Supports double-tap zoom scaling, loading status, retry buttons, and custom headers.
+ * Fetches secure original media over authenticated Axios endpoints and renders base64 data URIs.
  */
 export const OriginalViewerModal = ({ 
   visible = false, 
@@ -32,11 +64,15 @@ export const OriginalViewerModal = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [localUri, setLocalUri] = useState('');
   const [zoomLevel, setZoomLevel] = useState(1);
   const lastTapRef = useRef(0);
 
+  // Animated scale value for double-tap zoom transitions
+  const scaleValue = useRef(new Animated.Value(1)).current;
+
   // Manage immersive status bar visibility
-  React.useEffect(() => {
+  useEffect(() => {
     if (visible) {
       StatusBar.setHidden(true, 'fade');
     } else {
@@ -47,8 +83,47 @@ export const OriginalViewerModal = ({
     };
   }, [visible]);
 
-  // Animated scale value for double-tap zoom transitions
-  const scaleValue = useRef(new Animated.Value(1)).current;
+  // Fetch the secure original image binary and convert to base64
+  const fetchSecureImage = async () => {
+    if (!imageUri || !visible) return;
+
+    setLoading(true);
+    setError(false);
+    setLocalUri('');
+
+    try {
+      const response = await api.get(imageUri, {
+        responseType: 'arraybuffer',
+        headers: {
+          Authorization: `Bearer ${authToken}`
+        }
+      });
+
+      const base64Data = arrayBufferToBase64(response.data);
+      const mimeType = response.headers['content-type'] || 'image/jpeg';
+      const base64Uri = `data:${mimeType};base64,${base64Data}`;
+
+      setLocalUri(base64Uri);
+    } catch (err) {
+      console.error('Error fetching secure original image:', err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (visible) {
+      fetchSecureImage();
+    } else {
+      // Clear base64 string on close to free memory
+      setLocalUri('');
+      setError(false);
+      setLoading(false);
+      setZoomLevel(1);
+      scaleValue.setValue(1);
+    }
+  }, [visible, imageUri]);
 
   // Double tap handler
   const handleTap = () => {
@@ -69,12 +144,8 @@ export const OriginalViewerModal = ({
   };
 
   const handleRetry = () => {
-    setError(false);
-    setLoading(true);
+    fetchSecureImage();
   };
-
-  // Prevent caching by appending a fresh timestamp to the authorized image URI
-  const secureUri = imageUri ? `${imageUri}?t=${Date.now()}` : '';
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -91,24 +162,12 @@ export const OriginalViewerModal = ({
           style={styles.imageContent} 
           onPress={handleTap}
         >
-          {secureUri ? (
+          {localUri ? (
             <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
               <Image
-                source={{
-                  uri: secureUri,
-                  headers: { Authorization: `Bearer ${authToken}` }
-                }}
+                source={{ uri: localUri }}
                 style={styles.image}
                 resizeMode="contain"
-                onLoadStart={() => {
-                  setLoading(true);
-                  setError(false);
-                }}
-                onLoadEnd={() => setLoading(false)}
-                onError={() => {
-                  setLoading(false);
-                  setError(true);
-                }}
               />
             </Animated.View>
           ) : null}
