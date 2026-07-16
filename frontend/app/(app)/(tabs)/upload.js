@@ -244,6 +244,7 @@ export default function UploadScreen() {
             <View style={styles.progressBarBg}>
               <View style={[styles.progressBarFill, { width: `${uploadProgress}%` }]} />
             </View>
+            <Text style={styles.waitMessage}>Please wait while your premium media is uploading. Do not close the app or navigate away.</Text>
             <ActivityIndicator size="small" color={colors.primary} style={styles.progressSpinner} />
           </View>
         )}
@@ -352,6 +353,14 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.medium,
     marginBottom: spacing.xs
+  },
+  waitMessage: {
+    color: colors.textSecondary,
+    fontSize: typography.sizes.xs,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+    paddingHorizontal: spacing.md,
+    lineHeight: 16
   },
   progressBarBg: {
     width: '100%',
