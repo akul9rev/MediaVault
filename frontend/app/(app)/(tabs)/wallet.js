@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxl
+    paddingBottom: 96
   },
   header: {
     marginTop: spacing.lg,
