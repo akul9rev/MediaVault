@@ -154,6 +154,19 @@ class MediaRepository {
     );
     return rows;
   }
+
+  /**
+   * Soft delete an image by setting is_deleted = 1
+   * @param {number|string} id 
+   * @returns {Promise<boolean>} True if updated successfully
+   */
+  async softDeleteMedia(id) {
+    const [result] = await pool.query(
+      'UPDATE images SET is_deleted = 1 WHERE id = ?',
+      [id]
+    );
+    return result.affectedRows > 0;
+  }
 }
 
 export default new MediaRepository();

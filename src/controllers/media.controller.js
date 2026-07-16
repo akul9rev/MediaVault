@@ -79,6 +79,7 @@ export const getMediaDetails = asyncHandler(async (req, res) => {
     status: 'success',
     data: {
       id: details.id,
+      owner_id: details.owner_id,
       owner_name: details.owner_name,
       title: details.title,
       description: details.description,
@@ -147,5 +148,20 @@ export const getPurchasedMedia = asyncHandler(async (req, res) => {
     status: 'success',
     results: purchasedData.length,
     data: purchasedData
+  });
+});
+
+/**
+ * Delete media listing (soft delete)
+ */
+export const deleteMedia = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const user = req.user;
+
+  await mediaService.deleteMedia(id, user);
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Media deleted successfully'
   });
 });

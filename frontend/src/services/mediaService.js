@@ -61,6 +61,16 @@ export const mediaService = {
   getPurchasedMedia: async () => {
     const response = await api.get('/media/purchased');
     return response.data;
+  },
+
+  /**
+   * Delete media listing
+   * @param {string|number} id 
+   * @returns {Promise<Object>}
+   */
+  deleteMedia: async (id) => {
+    const response = await api.delete(`/media/${id}`);
+    return response.data;
   }
 };
 

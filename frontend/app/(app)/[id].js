@@ -28,11 +28,12 @@ import OriginalViewerModal from '../../src/components/OriginalViewerModal';
 export default function MediaDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { token, restoreSession } = useAuth();
+  const { user, token, restoreSession } = useAuth();
 
   const [details, setDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [unlocking, setUnlocking] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   
   // High-res secure original loading state controls
@@ -80,6 +81,40 @@ export default function MediaDetailsScreen() {
       setErrorMsg(message);
       setUnlocking(false);
     }
+  };
+
+  const handleDelete = async () => {
+    Alert.alert(
+      'Delete Media',
+      'Are you sure you want to permanently delete this media listing?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive', 
+          onPress: async () => {
+            setDeleting(true);
+            setErrorMsg('');
+            try {
+              await mediaService.deleteMedia(id);
+              Alert.alert('Success', 'Media deleted successfully.', [
+                { 
+                  text: 'OK', 
+                  onPress: () => {
+                    // Navigate back to refresh feed automatically via useFocusEffect
+                    router.back();
+                  } 
+                }
+              ]);
+            } catch (err) {
+              const message = err.response?.data?.message || 'Failed to delete media. Please try again.';
+              setErrorMsg(message);
+              setDeleting(false);
+            }
+          } 
+        }
+      ]
+    );
   };
 
   if (isLoading) {
@@ -177,12 +212,23 @@ export default function MediaDetailsScreen() {
               style={styles.actionBtn}
             />
           ) : (
-            <Button
-              title="View Original Image"
-              onPress={() => setViewOriginal(true)}
-              variant="primary"
-              style={styles.actionBtn}
-            />
+            <View style={styles.ownerActions}>
+              <Button
+                title="View Original Image"
+                onPress={() => setViewOriginal(true)}
+                variant="primary"
+                style={styles.actionBtn}
+              />
+              {user && details && user.id.toString() === details.owner_id?.toString() && (
+                <Button
+                  title="Delete Media"
+                  onPress={handleDelete}
+                  variant="secondary"
+                  loading={deleting}
+                  style={[styles.actionBtn, styles.deleteBtn]}
+                />
+              )}
+            </View>
           )}
         </View>
       </View>
@@ -341,6 +387,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxl
   },
   actionBtn: {
+    width: '100%'
+  },
+  deleteBtn: {
+    marginTop: spacing.md,
+    borderColor: colors.danger,
+    borderWidth: 1
+  },
+  ownerActions: {
     width: '100%'
   },
   emptyContainer: {

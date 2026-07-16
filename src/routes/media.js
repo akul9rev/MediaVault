@@ -5,7 +5,8 @@ import {
   getMediaDetails, 
   unlockMedia, 
   getOriginalMedia,
-  getPurchasedMedia
+  getPurchasedMedia,
+  deleteMedia
 } from '../controllers/media.controller.js';
 import protect from '../middleware/authentication/auth.js';
 import upload from '../config/multer.js';
@@ -26,5 +27,6 @@ router.get('/purchased', getPurchasedMedia);
 router.get('/:id', getMediaDetails);
 router.post('/:id/unlock', unlockMedia);
 router.get('/:id/original', getOriginalMedia);
+router.delete('/:id', deleteMedia);
 
 export default router;

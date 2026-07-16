@@ -227,6 +227,26 @@ class MediaService {
       connection.release();
     }
   }
+
+  /**
+   * Soft deletes a media listing, checking owner authorization
+   * @param {number|string} id 
+   * @param {Object} user Authenticated user model
+   * @returns {Promise<boolean>}
+   */
+  async deleteMedia(id, user) {
+    const image = await mediaRepository.findMediaById(id);
+    if (!image) {
+      throw new AppError('Media item not found.', 404);
+    }
+
+    const isOwner = user.id.toString() === image.owner_id.toString();
+    if (!isOwner) {
+      throw new AppError('Forbidden: only the owner can delete this media.', 403);
+    }
+
+    return await mediaRepository.softDeleteMedia(id);
+  }
 }
 
 export default new MediaService();
