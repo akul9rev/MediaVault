@@ -94,6 +94,7 @@ export const OriginalViewerModal = ({
     try {
       const response = await api.get(imageUri, {
         responseType: 'arraybuffer',
+        timeout: 60000, // 60 seconds timeout for high-resolution original images
         headers: {
           Authorization: `Bearer ${authToken}`
         }

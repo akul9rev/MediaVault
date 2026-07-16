@@ -49,6 +49,7 @@ export const mediaService = {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
+      timeout: 120000, // 2 minutes timeout for large file uploads
       onUploadProgress
     });
     return response.data;
