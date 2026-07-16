@@ -2,6 +2,7 @@ import path from 'path';
 import mediaService from '../services/media.service.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
+import { buildFileUrl } from '../utils/url.js';
 
 /**
  * Media Controller
@@ -22,7 +23,7 @@ export const uploadMedia = asyncHandler(async (req, res) => {
     owner_id: req.user.id
   });
 
-  const previewUrl = `${req.protocol}://${req.get('host')}/uploads/previews/${path.basename(image.preview_path)}`;
+  const previewUrl = buildFileUrl(req, image.preview_path);
 
   res.status(201).json({
     status: 'success',
@@ -48,7 +49,7 @@ export const getMediaFeed = asyncHandler(async (req, res) => {
   });
 
   const feedData = items.map((item) => {
-    const previewUrl = `${req.protocol}://${req.get('host')}/uploads/previews/${path.basename(item.preview_path)}`;
+    const previewUrl = buildFileUrl(req, item.preview_path);
     return {
       id: item.id,
       owner_name: item.owner_name,
@@ -72,7 +73,7 @@ export const getMediaDetails = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   const details = await mediaService.getMediaDetails(id, req.user);
-  const previewUrl = `${req.protocol}://${req.get('host')}/uploads/previews/${path.basename(details.preview_path)}`;
+  const previewUrl = buildFileUrl(req, details.preview_path);
 
   res.status(200).json({
     status: 'success',
@@ -130,7 +131,7 @@ export const getPurchasedMedia = asyncHandler(async (req, res) => {
   const items = await mediaService.getPurchasedMedia(userId);
 
   const purchasedData = items.map((item) => {
-    const previewUrl = `${req.protocol}://${req.get('host')}/uploads/previews/${path.basename(item.preview_path)}`;
+    const previewUrl = buildFileUrl(req, item.preview_path);
     return {
       id: item.id,
       owner_name: item.owner_name,
