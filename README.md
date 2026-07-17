@@ -1,4 +1,4 @@
-# Media Lock: Full Stack Premium Media Locker Application
+# MediaVault : Full Stack Premium Media Locker Application
 
 A secure, production-grade monetization platform allowing users to register, upload premium images locked behind a blurred preview, and purchase access to unlock and stream full-resolution original files. 
 
