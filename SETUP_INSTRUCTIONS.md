@@ -21,6 +21,17 @@ The APK is pre-compiled and configured to connect directly to the hosted product
 4.  Open the **MediaVault** app from your app drawer.
 5.  Create a new account (credited with initial coins) or login with an existing account to start testing.
 
+### 🔑 Demo Accounts
+
+For convenient testing on the production backend, you can log in directly using either of these pre-configured demo accounts:
+
+*   **Account 1**:
+    *   Email: `akultest1@gmail.com`
+    *   Password: `Password@123`
+*   **Account 2**:
+    *   Email: `demo@gmail.com`
+    *   Password: `12345678`
+
 ---------
 
 ## 💻 Method 2: Running from Source Code (Local Development)
