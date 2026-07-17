@@ -2,7 +2,7 @@
 
 A secure, production-grade monetization platform allowing users to register, upload premium images locked behind a blurred preview, and purchase access to unlock and stream full-resolution original files. 
 
-The application utilizes an atomic database ledger system to handle coins transactions securely, preventing race conditions or double-spending.
+The application utilizes an atomic database ledger system to handle coins transactions securely, preventing race conditions or double-spending. All uploaded assets are securely stored and managed using Cloudinary.
 
 ---
 
@@ -10,9 +10,9 @@ The application utilizes an atomic database ledger system to handle coins transa
 
 *   **User Registration & Authentication**: Secure sign-up/sign-in flows via JSON Web Tokens (JWT). Newly registered users receive an initial credit of **100 coins**.
 *   **Dynamic Home Feed**: Displays locked and unlocked media cards with smooth press animations. Locked cards show the image with a server-side blurred preview and price badge. Unlocked cards display the unlocked status.
-*   **Media Upload & Lock**: Form-based upload with selection from the device gallery. The backend uses `sharp` to process and compress the uploaded media, generating a blurred, resized preview file.
+*   **Media Upload & Cloudinary Storage**: Form-based upload with selection from the device gallery. The backend uses `sharp` to process and compress the uploaded media, generating a blurred, resized preview file. Both the raw original image and the blurred preview are stored in the cloud via **Cloudinary**. Local disk directories are used only as transient scratch space and cleaned up immediately.
 *   **Safe Purchase Flow (Atomic Ledger)**: MySQL database transaction-wrapped purchases. Buyer is deducted, seller is credited, and transaction audit logs are written atomically. If any step fails, the entire transaction is rolled back.
-*   **Secure Original Image Viewer**: Streams protected original images directly from the backend. The frontend utilizes custom Axios binary stream loaders to enforce JWT Authorization headers and renders images as Base64 data URIs, protecting images from direct URL sniffing.
+*   **Secure Original Image Viewer**: Streams protected original images directly from the backend. The backend retrieves the private original image stream from Cloudinary server-side, verifying purchase context prior to serving, while the frontend renders the binary payload as a Base64 data URI to prevent URL sniffing.
 *   **Owner Media Deletion**: Owners can soft-delete their listings directly from the detail screen. This immediately hides the image from all feeds while preserving existing purchase logs and transactions for audit integrity.
 *   **Wallet & Transaction History**: Real-time display of current coins balance alongside detailed debit/credit logs of all earnings, sign-ups, and purchases.
 *   **Purchased Media Tab**: Dedicated collection feed displaying every locked item that the user has successfully purchased and unlocked.
@@ -32,7 +32,9 @@ The database structure and ER diagram are documented in the separate [DATABASE_S
 *   **Runtime**: Node.js (ES Modules)
 *   **Framework**: Express.js
 *   **Database**: MySQL
+*   **Cloud Storage**: Cloudinary (SDK)
 *   **Image Manipulation**: Multer (file parsing) & Sharp (resizing/blurring)
+*   **HTTP Client**: Axios (used for streaming secure assets)
 *   **Validation**: Express-Validator
 *   **Logging**: Morgan
 
@@ -68,6 +70,11 @@ The database structure and ER diagram are documented in the separate [DATABASE_S
     JWT_SECRET=your_jwt_secret_key_here
     JWT_EXPIRES_IN=7d
     INITIAL_COIN_BALANCE=100
+    
+    # Cloudinary Credentials
+    CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+    CLOUDINARY_API_KEY=your_cloudinary_api_key
+    CLOUDINARY_API_SECRET=your_cloudinary_api_secret
     ```
 3.  Install dependencies and start the dev server:
     ```bash
