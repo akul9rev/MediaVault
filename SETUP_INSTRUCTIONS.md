@@ -21,7 +21,7 @@ The APK is pre-compiled and configured to connect directly to the hosted product
 4.  Open the **MediaVault** app from your app drawer.
 5.  Create a new account (credited with initial coins) or login with an existing account to start testing.
 
----
+---------
 
 ## 💻 Method 2: Running from Source Code (Local Development)
 
@@ -99,7 +99,7 @@ To run the application locally on your machine, you must set up the MySQL databa
 3.  **Install Frontend Packages**:
     Run the following command to install dependencies:
     ```bash
-    npm install --legacy-peer-deps
+    npm install 
     ```
 
 4.  **Launch Metro Bundler**:
