@@ -1,11 +1,13 @@
 import sharp from 'sharp';
 import path from 'path';
+import fs from 'fs';
 import mediaRepository from '../repositories/media.repository.js';
 import walletRepository from '../repositories/wallet.repository.js';
 import Image from '../models/Image.js';
 import AppError from '../utils/AppError.js';
 import pool from '../config/db.js';
 import { SHARP_CONFIG } from '../config/sharp.js';
+import cloudinary from '../config/cloudinary.js';
 
 /**
  * Media Service
@@ -23,9 +25,13 @@ class MediaService {
     }
 
     const previewFilename = `preview-${file.filename}`;
-    const previewPath = path.join(path.dirname(file.path), '../previews', previewFilename);
+    const previewPath = path.join(path.dirname(file.path), previewFilename);
+
+    let originalUpload;
+    let previewUpload;
 
     try {
+      // 1. Process preview thumbnail image locally in temp directory
       await sharp(file.path)
         .resize(SHARP_CONFIG.preview.width, SHARP_CONFIG.preview.height, {
           fit: SHARP_CONFIG.preview.fit
@@ -33,9 +39,39 @@ class MediaService {
         .blur(SHARP_CONFIG.preview.blurSigma)
         .jpeg({ quality: SHARP_CONFIG.preview.quality })
         .toFile(previewPath);
+
+      // 2. Upload original full-resolution image to Cloudinary as private asset
+      originalUpload = await cloudinary.uploader.upload(file.path, {
+        folder: 'media_vault_originals',
+        type: 'private',
+        resource_type: 'image'
+      });
+
+      // 3. Upload processed blurred preview image to Cloudinary as public asset
+      previewUpload = await cloudinary.uploader.upload(previewPath, {
+        folder: 'media_vault_previews',
+        resource_type: 'image'
+      });
     } catch (err) {
-      throw new AppError(`Failed to process preview image: ${err.message}`, 500);
+      throw new AppError(`Failed to process or upload image: ${err.message}`, 500);
+    } finally {
+      // 4. Clean up / delete local temporary files
+      try {
+        if (fs.existsSync(file.path)) {
+          await fs.promises.unlink(file.path);
+        }
+        if (fs.existsSync(previewPath)) {
+          await fs.promises.unlink(previewPath);
+        }
+      } catch (cleanupErr) {
+        console.warn('Temporary file cleanup failed:', cleanupErr.message);
+      }
     }
+
+    const originalPathData = JSON.stringify({
+      public_id: originalUpload.public_id,
+      secure_url: originalUpload.secure_url
+    });
 
     const mediaRow = await mediaRepository.createMedia({
       owner_id,
@@ -44,8 +80,8 @@ class MediaService {
       original_filename: file.originalname,
       mime_type: file.mimetype,
       file_size: file.size,
-      original_path: file.path,
-      preview_path: previewPath,
+      original_path: originalPathData,
+      preview_path: previewUpload.secure_url,
       unlock_price
     });
 

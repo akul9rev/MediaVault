@@ -1,6 +1,7 @@
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -8,8 +9,12 @@ const __dirname = path.dirname(__filename);
 // Define storage engine for original uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Save to the originals uploads directory
-    cb(null, path.join(__dirname, '../uploads/originals'));
+    // Ensure the temp directory exists
+    const tempDir = path.join(__dirname, '../uploads/temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    cb(null, tempDir);
   },
   filename: (req, file, cb) => {
     // Generate safe unique filename

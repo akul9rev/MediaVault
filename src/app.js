@@ -43,9 +43,6 @@ if (process.env.NODE_ENV !== 'test') {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static preview files (so blurred versions can be accessed publicly)
-app.use('/uploads/previews', express.static(path.join(__dirname, 'uploads/previews')));
-
 // 2. Configure API Routes under /api/v1/
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/media', mediaRouter);

@@ -1,8 +1,10 @@
 import path from 'path';
+import axios from 'axios';
 import mediaService from '../services/media.service.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
 import { buildFileUrl } from '../utils/url.js';
+import cloudinary from '../config/cloudinary.js';
 
 /**
  * Media Controller
@@ -118,9 +120,44 @@ export const getOriginalMedia = asyncHandler(async (req, res) => {
     throw new AppError('Forbidden access.', 403);
   }
 
-  // Stream high-res original image directly from the secure original folder
-  const absolutePath = path.resolve(details.original_path);
-  res.sendFile(absolutePath);
+  // Check if original_path is stored as a Cloudinary JSON structure
+  let isCloudinary = false;
+  let originalData;
+  try {
+    originalData = JSON.parse(details.original_path);
+    if (originalData && originalData.public_id && originalData.secure_url) {
+      isCloudinary = true;
+    }
+  } catch (e) {
+    // Treat as legacy local path
+  }
+
+  if (isCloudinary) {
+    try {
+      // Generate a secure, short-lived signed URL for private Cloudinary asset
+      const signedUrl = cloudinary.url(originalData.public_id, {
+        type: 'private',
+        sign_url: true,
+        expires_at: Math.floor(Date.now() / 1000) + 60 // 60 seconds expiration
+      });
+
+      // Stream the image from Cloudinary to Express response
+      const response = await axios({
+        url: signedUrl,
+        method: 'GET',
+        responseType: 'stream'
+      });
+
+      res.setHeader('Content-Type', details.mime_type || 'image/jpeg');
+      response.data.pipe(res);
+    } catch (err) {
+      throw new AppError(`Failed to stream original media from Cloudinary: ${err.message}`, 500);
+    }
+  } else {
+    // Stream high-res original image directly from the secure original folder (legacy fallback)
+    const absolutePath = path.resolve(details.original_path);
+    res.sendFile(absolutePath);
+  }
 });
 
 /**

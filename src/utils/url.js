@@ -9,6 +9,10 @@ import path from 'path';
  */
 export const buildFileUrl = (req, filePath) => {
   if (!filePath) return '';
+  // If the path is already a full Cloudinary HTTP/HTTPS URL, return it directly
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+    return filePath;
+  }
   const filename = path.basename(filePath);
   return `${req.protocol}://${req.get('host')}/uploads/previews/${filename}`;
 };
