@@ -40,10 +40,9 @@ class MediaService {
         .jpeg({ quality: SHARP_CONFIG.preview.quality })
         .toFile(previewPath);
 
-      // 2. Upload original full-resolution image to Cloudinary as private asset
+      // 2. Upload original full-resolution image to Cloudinary as standard asset
       originalUpload = await cloudinary.uploader.upload(file.path, {
         folder: 'media_vault_originals',
-        type: 'private',
         resource_type: 'image'
       });
 

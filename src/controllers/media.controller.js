@@ -134,16 +134,9 @@ export const getOriginalMedia = asyncHandler(async (req, res) => {
 
   if (isCloudinary) {
     try {
-      // Generate a secure, short-lived signed URL for private Cloudinary asset
-      const signedUrl = cloudinary.url(originalData.public_id, {
-        type: 'private',
-        sign_url: true,
-        expires_at: Math.floor(Date.now() / 1000) + 60 // 60 seconds expiration
-      });
-
       // Stream the image from Cloudinary to Express response
       const response = await axios({
-        url: signedUrl,
+        url: originalData.secure_url,
         method: 'GET',
         responseType: 'stream'
       });
