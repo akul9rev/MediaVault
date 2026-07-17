@@ -4,6 +4,9 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
+import sharp from 'sharp';
+import cloudinary from './config/cloudinary.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,6 +30,57 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok'
   });
+});
+
+app.get('/cloudinary-test', async (req, res) => {
+  const testPath = path.join(__dirname, 'test.jpg');
+  try {
+    // Generate a 1x1 pixel image using sharp
+    await sharp({
+      create: {
+        width: 1,
+        height: 1,
+        channels: 3,
+        background: { r: 255, g: 0, b: 0 }
+      }
+    })
+    .jpeg()
+    .toFile(testPath);
+
+    console.log('Generated test 1x1 image at:', testPath);
+
+    // Upload to Cloudinary using official SDK (no extra parameters)
+    const result = await cloudinary.uploader.upload(testPath);
+
+    console.log('Cloudinary test upload successful:', result.secure_url);
+
+    // Delete temp file
+    if (fs.existsSync(testPath)) {
+      fs.unlinkSync(testPath);
+    }
+
+    res.json({
+      status: 'success',
+      result
+    });
+  } catch (error) {
+    // Clean up if it exists
+    if (fs.existsSync(testPath)) {
+      try {
+        fs.unlinkSync(testPath);
+      } catch (err) {
+        // Ignore unlink errors
+      }
+    }
+    console.error('Cloudinary Test Failed:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message,
+      name: error.name,
+      http_code: error.http_code,
+      full_error: error
+    });
+  }
 });
 
 // 1. Configure Global Middlewares
