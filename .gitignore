@@ -29,3 +29,6 @@ src/uploads/previews/*
 *.njsproj
 *.sln
 *.sw?
+
+# Project Explanation Document (Uncommitted)
+PROJECT_EXPLANATION.md
